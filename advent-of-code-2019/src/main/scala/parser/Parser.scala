@@ -3,6 +3,19 @@ package parser
 import scala.io.Source
 
 object Parser {
+  def parseCommaSeparatedIntList(resourcePath: String): List[Int] = {
+    parseCommaSeparatedTextFile(resourcePath)
+      .flatMap(parseNumber)
+  }
+
+  private def parseCommaSeparatedTextFile(resourcePath: String): List[String] = {
+    readFileAsString(resourcePath).split(",").toList
+  }
+
+  private def readFileAsString(resourcePath: String): String = {
+    parseLines(resourcePath).mkString
+  }
+
   def parseNumber(numberString: String): Option[Int] = {
     try {
       Some(numberString.toInt)
