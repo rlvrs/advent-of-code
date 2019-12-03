@@ -27,4 +27,9 @@ class ParserShould extends UnitTest {
     Parser.parseSignedNumber("asdasd") shouldBe None
     Parser.parseSignedNumber("qwerty") shouldBe None
   }
+
+  test("return list of integers from comma separated text file") {
+    val expectedList = List(1,9,10,3,2,3,11,0,99,30,40,50)
+    Parser.parseCommaSeparatedIntList("parser/comma_separated_file.txt") shouldBe expectedList
+  }
 }
