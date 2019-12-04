@@ -15,15 +15,11 @@ object Solution {
       currNoun <- List.range(0, 99)
       currVerb <- List.range(0, 99)
     } yield (currNoun, currVerb))
-      .takeWhile {
+      .dropWhile {
         case (currNoun: Int, currVerb: Int) => executeIntCodeProgram(withNounVerb(programState, currNoun, currVerb)).head != targetOutput
-      }.last
+      }.head
 
-    if (lastVerb == 99) {
-      (lastNoun+1, lastVerb)
-    } else {
-      (lastNoun, lastVerb+1)
-    }
+    (lastNoun, lastVerb)
   }
 
   def findComposedNounVerbToOutput(programState: List[Int], targetOutput: Int): Int = {
