@@ -33,6 +33,12 @@ object Parser {
     }
   }
 
+  def parseLinesAsCommaSeparatedStringList(resourcePath: String): List[List[String]] = {
+    parseLines(resourcePath)
+      .map(_.split(",").toList)
+      .toList
+  }
+
   def parseLines(resourcePath: String): Seq[String] = {
     val bufferedSource = Source.fromResource(resourcePath)
     val fileLines = bufferedSource.getLines.toList
