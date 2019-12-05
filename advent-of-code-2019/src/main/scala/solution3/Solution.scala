@@ -2,6 +2,10 @@ package solution3
 
 import parser.Parser.parseNumber
 
+// TODO: companion object for Coordinates
+// TODO: case class for directions
+// TODO: revisit generateAllCoordinates
+
 final case class Coordinate(x: Int, y: Int) {
   def +(that: Coordinate): Coordinate = Coordinate(this.x + that.x, this.y + that.y)
   def *(that: Coordinate): Coordinate = Coordinate(this.x * that.x, this.y * that.y)
