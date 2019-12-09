@@ -33,7 +33,7 @@ class SolutionShould extends UnitTest {
   }
 
   test("solve part 1: Counts number of different passwords within range") {
-    val range = Range(372037, 905157).toList
+    val range = (372037 to 905157).toList
 
     Solution.differentPasswordsWithinRange1(range) shouldBe 481
   }
@@ -58,7 +58,7 @@ class SolutionShould extends UnitTest {
   }
 
   test("solve part 2: Counts number of different passwords within range") {
-    val range = Range(372037, 905157).toList
+    val range = (372037 to 905157).toList
 
     Solution.differentPasswordsWithinRange2(range) shouldBe 299
   }
