@@ -30,7 +30,7 @@ object Solution {
     loop(programState, 0)
   }
 
-  def intCodeArithmeticOperation(getArg1: (List[Int], Int) => Int)(getArg2: (List[Int], Int) => Int)(operation: (Int, Int) => Int)(programState: List[Int], instructionPointer: Int): (List[Int], Int) = {
+  def intCodeArithmeticOperation(operation: (Int, Int) => Int)(getArg1: (List[Int], Int) => Int)(getArg2: (List[Int], Int) => Int)(programState: List[Int], instructionPointer: Int): (List[Int], Int) = {
     val firstOperand = getArg1(programState, instructionPointer+1)
     val secondOperand = getArg2(programState, instructionPointer+2)
     val resultIndex = programState(instructionPointer+3)
@@ -42,11 +42,13 @@ object Solution {
 
   def intCodeMultiply(programState: List[Int], instructionPointer: Int): (List[Int], Int) = {
     def multiplication(a: Int, b: Int): Int = a * b
+    val multiplicationOperation = (intCodeArithmeticOperation _)(multiplication)
+
     programState(instructionPointer) match {
-      case 2 => intCodeArithmeticOperation(getPositionParameter)(getPositionParameter)(multiplication)(programState, instructionPointer)
-      case 102 => intCodeArithmeticOperation(getImmediateParameter)(getPositionParameter)(multiplication)(programState, instructionPointer)
-      case 1002 => intCodeArithmeticOperation(getPositionParameter)(getImmediateParameter)(multiplication)(programState, instructionPointer)
-      case 1102 => intCodeArithmeticOperation(getImmediateParameter)(getImmediateParameter)(multiplication)(programState, instructionPointer)
+      case 2 => multiplicationOperation(getPositionParameter)(getPositionParameter)(programState, instructionPointer)
+      case 102 => multiplicationOperation(getImmediateParameter)(getPositionParameter)(programState, instructionPointer)
+      case 1002 => multiplicationOperation(getPositionParameter)(getImmediateParameter)(programState, instructionPointer)
+      case 1102 => multiplicationOperation(getImmediateParameter)(getImmediateParameter)(programState, instructionPointer)
       case _ => (List(), instructionPointer)
     }
   }
@@ -61,11 +63,13 @@ object Solution {
 
   def intCodeAdd(programState: List[Int], instructionPointer: Int): (List[Int], Int) = {
     def addition(a: Int, b: Int): Int = a + b
+    val additionOperation = (intCodeArithmeticOperation _)(addition)
+
     programState(instructionPointer) match {
-      case 1 => intCodeArithmeticOperation(getPositionParameter)(getPositionParameter)(addition)(programState, instructionPointer)
-      case 101 => intCodeArithmeticOperation(getImmediateParameter)(getPositionParameter)(addition)(programState, instructionPointer)
-      case 1001 => intCodeArithmeticOperation(getPositionParameter)(getImmediateParameter)(addition)(programState, instructionPointer)
-      case 1101 => intCodeArithmeticOperation(getImmediateParameter)(getImmediateParameter)(addition)(programState, instructionPointer)
+      case 1 => additionOperation(getPositionParameter)(getPositionParameter)(programState, instructionPointer)
+      case 101 => additionOperation(getImmediateParameter)(getPositionParameter)(programState, instructionPointer)
+      case 1001 => additionOperation(getPositionParameter)(getImmediateParameter)(programState, instructionPointer)
+      case 1101 => additionOperation(getImmediateParameter)(getImmediateParameter)(programState, instructionPointer)
       case _ => (List(), instructionPointer)
     }
   }
@@ -83,7 +87,7 @@ object Solution {
     (programState, instructionPointer+2)
   }
 
-  def intCodeBranchOperation(getArg1: (List[Int], Int) => Int)(getArg2: (List[Int], Int) => Int)(operation: (Int) => Boolean)(programState: List[Int], instructionPointer: Int): (List[Int], Int) = {
+  def intCodeBranchOperation(operation: Int => Boolean)(getArg1: (List[Int], Int) => Int)(getArg2: (List[Int], Int) => Int)(programState: List[Int], instructionPointer: Int): (List[Int], Int) = {
     val firstOperand = getArg1(programState, instructionPointer+1)
 
     if (operation(firstOperand)) {
@@ -95,45 +99,73 @@ object Solution {
 
   def intCodeJumpIfTrue(programState: List[Int], instructionPointer: Int): (List[Int], Int) = {
     def isNotZero(a: Int): Boolean = (a != 0)
+    val jumpIfNotZero = (intCodeBranchOperation _)(isNotZero)
+
     programState(instructionPointer) match {
-      case 5 => intCodeBranchOperation(getPositionParameter)(getPositionParameter)(isNotZero)(programState, instructionPointer)
-      case 105 => intCodeBranchOperation(getImmediateParameter)(getPositionParameter)(isNotZero)(programState, instructionPointer)
-      case 1005 => intCodeBranchOperation(getPositionParameter)(getImmediateParameter)(isNotZero)(programState, instructionPointer)
-      case 1105 => intCodeBranchOperation(getImmediateParameter)(getImmediateParameter)(isNotZero)(programState, instructionPointer)
+      case 5 => jumpIfNotZero(getPositionParameter)(getPositionParameter)(programState, instructionPointer)
+      case 105 => jumpIfNotZero(getImmediateParameter)(getPositionParameter)(programState, instructionPointer)
+      case 1005 => jumpIfNotZero(getPositionParameter)(getImmediateParameter)(programState, instructionPointer)
+      case 1105 => jumpIfNotZero(getImmediateParameter)(getImmediateParameter)(programState, instructionPointer)
       case _ => (List(), instructionPointer)
     }
   }
 
   def intCodeJumpIfFalse(programState: List[Int], instructionPointer: Int): (List[Int], Int) = {
     def isZero(a: Int): Boolean = (a == 0)
+    val jumpIfIsZero = (intCodeBranchOperation _)(isZero)
+
     programState(instructionPointer) match {
-      case 6 => intCodeBranchOperation(getPositionParameter)(getPositionParameter)(isZero)(programState, instructionPointer)
-      case 106 => intCodeBranchOperation(getImmediateParameter)(getPositionParameter)(isZero)(programState, instructionPointer)
-      case 1006 => intCodeBranchOperation(getPositionParameter)(getImmediateParameter)(isZero)(programState, instructionPointer)
-      case 1106 => intCodeBranchOperation(getImmediateParameter)(getImmediateParameter)(isZero)(programState, instructionPointer)
+      case 6 => jumpIfIsZero(getPositionParameter)(getPositionParameter)(programState, instructionPointer)
+      case 106 => jumpIfIsZero(getImmediateParameter)(getPositionParameter)(programState, instructionPointer)
+      case 1006 => jumpIfIsZero(getPositionParameter)(getImmediateParameter)(programState, instructionPointer)
+      case 1106 => jumpIfIsZero(getImmediateParameter)(getImmediateParameter)(programState, instructionPointer)
       case _ => (List(), instructionPointer)
     }
   }
 
   def intCodeLessThan(programState: List[Int], instructionPointer: Int): (List[Int], Int) = {
     def lessThan(a: Int, b:Int): Int = (if (a < b) 1 else 0)
+    val isLessThan = (intCodeArithmeticOperation _)(lessThan)
+
     programState(instructionPointer) match {
-      case 7 => intCodeArithmeticOperation(getPositionParameter)(getPositionParameter)(lessThan)(programState, instructionPointer)
-      case 107 => intCodeArithmeticOperation(getImmediateParameter)(getPositionParameter)(lessThan)(programState, instructionPointer)
-      case 1007 => intCodeArithmeticOperation(getPositionParameter)(getImmediateParameter)(lessThan)(programState, instructionPointer)
-      case 1107 => intCodeArithmeticOperation(getImmediateParameter)(getImmediateParameter)(lessThan)(programState, instructionPointer)
+      case 7 => isLessThan(getPositionParameter)(getPositionParameter)(programState, instructionPointer)
+      case 107 => isLessThan(getImmediateParameter)(getPositionParameter)(programState, instructionPointer)
+      case 1007 => isLessThan(getPositionParameter)(getImmediateParameter)(programState, instructionPointer)
+      case 1107 => isLessThan(getImmediateParameter)(getImmediateParameter)(programState, instructionPointer)
       case _ => (List(), instructionPointer)
     }
   }
 
   def intCodeEquals(programState: List[Int], instructionPointer: Int): (List[Int], Int) = {
-    def lessThan(a: Int, b:Int): Int = (if (a == b) 1 else 0)
+    def equals(a: Int, b:Int): Int = (if (a == b) 1 else 0)
+    val isEquals = (intCodeArithmeticOperation _)(equals)
+
     programState(instructionPointer) match {
-      case 8 => intCodeArithmeticOperation(getPositionParameter)(getPositionParameter)(lessThan)(programState, instructionPointer)
-      case 108 => intCodeArithmeticOperation(getImmediateParameter)(getPositionParameter)(lessThan)(programState, instructionPointer)
-      case 1008 => intCodeArithmeticOperation(getPositionParameter)(getImmediateParameter)(lessThan)(programState, instructionPointer)
-      case 1108 => intCodeArithmeticOperation(getImmediateParameter)(getImmediateParameter)(lessThan)(programState, instructionPointer)
+      case 8 => isEquals(getPositionParameter)(getPositionParameter)(programState, instructionPointer)
+      case 108 => isEquals(getImmediateParameter)(getPositionParameter)(programState, instructionPointer)
+      case 1008 => isEquals(getPositionParameter)(getImmediateParameter)(programState, instructionPointer)
+      case 1108 => isEquals(getImmediateParameter)(getImmediateParameter)(programState, instructionPointer)
       case _ => (List(), instructionPointer)
     }
   }
+
+  // TODO
+//  programState(instructionPointer) match {
+//    case validInstruction => applyParameterModes(programState(instructionPointer))(programState, instructionPointer)
+//    case _ => (List(), instructionPointer)
+//  }
+//
+//  def applyParameterModes(programInstruction: Int,
+//                          partialFn: (List[Int], Int) => Int, (List[Int], Int) => Int]
+//                         ): PartialFunction[(List[Int], Int) => (List[Int], Int)]
+//    partialFn: (PartialFunction[(List[Int], Int) => Int, List[Int], Int => Int, List[Int], Int => (List[Int], Int)]) = {
+//    programInstruction.toString match {
+//      case s"100${_}" => partialFn(getPositionParameter)(getImmediateParameter)
+//      case s"110${_}" => partialFn(getImmediateParameter)(getImmediateParameter)
+//      case s"10${_}" => partialFn(getImmediateParameter)(getPositionParameter)
+//      case "1" | "2" | "3" |
+//      "4" | "5" | "6" | "7" |
+//      "8" => partialFn(getPositionParameter)(getPositionParameter)
+//    }
+//  }
 }
