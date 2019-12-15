@@ -39,6 +39,36 @@ object Parser {
       .toList
   }
 
+  def parseLinesAsAdjacencyList(resourcePath: String): Map[String, List[String]] = {
+    parseLines(resourcePath)
+      .map(_.split("\\)"))
+      .groupBy(_.head)
+      .view.mapValues(_.flatten.toList)
+      .toMap
+      .map{ case (k,v) => (k, v.filterNot {_.equals(k)}) }
+  }
+
+  private def parseLinesAsAdjacencyListReverse(resourcePath: String): Map[String, List[String]] = {
+    parseLines(resourcePath)
+      .map(_.split("\\)").reverse)
+      .groupBy(_.head)
+      .view.mapValues(_.flatten.toList)
+      .toMap
+      .map{ case (k,v) => (k, v.filterNot {_.equals(k)}) }
+  }
+
+  private def mergeAdjacencyLists(adjacencyList1: Map[String, List[String]], adjacencyList2: Map[String, List[String]]): Map[String, List[String]] = {
+    (adjacencyList1.toList ++ adjacencyList2.toList)
+      .groupBy(_._1)
+      .view.mapValues(_.flatMap(_._2))
+      .toMap
+  }
+
+  def parseLinesAsAdjacencyListUndirected(resourcePath: String): Map[String, List[String]] = {
+    mergeAdjacencyLists(parseLinesAsAdjacencyListReverse(resourcePath),
+      parseLinesAsAdjacencyList(resourcePath))
+  }
+
   def parseLines(resourcePath: String): Seq[String] = {
     val bufferedSource = Source.fromResource(resourcePath)
     val fileLines = bufferedSource.getLines.toList
