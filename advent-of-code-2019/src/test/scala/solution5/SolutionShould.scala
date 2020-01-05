@@ -1,211 +1,171 @@
 package solution5
 
-import org.scalatest.funsuite.AnyFunSuite
-import org.scalatest.matchers.should.Matchers
-import parser.Parser
+// TODO IntCodeInstruction, IntCodeInstructionAdd, IntCodeInstructionMultiply, ...
+// TODO Can I generalise the pattern matches that seem to have duplicated code?
 
-abstract class UnitTest extends AnyFunSuite with Matchers
+object Solution {
+  def executeIntCodeProgram(programState: List[Int], valToWrite: Int=0): List[Int] = {
+    @scala.annotation.tailrec
+    def loop(programState: List[Int], instructionPointer: Int): List[Int] = {
+      val instructionCode = programState(instructionPointer)
+      val (newProgramState, newInstructionPointer) = instructionCode.toString match {
+        case "99" => (programState, -1)
+        case s"${_}01" | "1" => intCodeAdd(programState, instructionPointer)
+        case s"${_}02" | "2" => intCodeMultiply(programState, instructionPointer)
+        case "3" => intCodeInput(programState, instructionPointer, valToWrite)
+        case s"${_}04" | "4" => intCodeOutput(programState, instructionPointer)
+        case s"${_}05" | "5" => intCodeJumpIfTrue(programState, instructionPointer)
+        case s"${_}06" | "6" => intCodeJumpIfFalse(programState, instructionPointer)
+        case s"${_}07" | "7" => intCodeLessThan(programState, instructionPointer)
+        case s"${_}08" | "8" => intCodeEquals(programState, instructionPointer)
+        case _ => (List(), -1)
+      }
+      if (newInstructionPointer < 0) {
+        newProgramState
+      } else {
+        loop(newProgramState, newInstructionPointer)
+      }
+    }
 
-class SolutionShould extends UnitTest {
-  test("perform addition of arg1(immediate), arg2(immediate) and store in position mode") {
-    val initialState = List(1101,9,10,3,2,3,11,0,99,30,40,50)
-    val expectedState = (List(1101,9,10,19,2,3,11,0,99,30,40,50), 4)
-
-    Solution.intCodeAdd(initialState, 0) shouldBe expectedState
+    loop(programState, 0)
   }
 
-  test("perform addition of arg1(position), arg2(position) and store in position mode") {
-    val initialState = List(1,9,10,3,2,3,11,0,99,30,40,50)
-    val expectedState = (List(1,9,10,70,2,3,11,0,99,30,40,50), 4)
+  def intCodeArithmeticOperation(operation: (Int, Int) => Int)(getArg1: (List[Int], Int) => Int)(getArg2: (List[Int], Int) => Int)(programState: List[Int], instructionPointer: Int): (List[Int], Int) = {
+    val firstOperand = getArg1(programState, instructionPointer+1)
+    val secondOperand = getArg2(programState, instructionPointer+2)
+    val resultIndex = programState(instructionPointer+3)
 
-    Solution.intCodeAdd(initialState, 0) shouldBe expectedState
+    val result = operation(firstOperand, secondOperand)
+
+    (programState.updated(resultIndex, result), instructionPointer+4)
   }
 
-  test("perform addition of arg1(immediate), arg2(position) and store in position mode") {
-    val initialState = List(101,9,10,3,2,3,11,0,99,30,40,50)
-    val expectedState = (List(101,9,10,49,2,3,11,0,99,30,40,50), 4)
+  def intCodeMultiply(programState: List[Int], instructionPointer: Int): (List[Int], Int) = {
+    def multiplication(a: Int, b: Int): Int = a * b
+    val multiplicationOperation = (intCodeArithmeticOperation _)(multiplication)
 
-    Solution.intCodeAdd(initialState, 0) shouldBe expectedState
-  }
-
-  test("perform addition of arg1(position), arg2(immediate) and store in position mode") {
-    val initialState = List(1001,9,10,3,2,3,11,0,99,30,40,50)
-    val expectedState = (List(1001,9,10,40,2,3,11,0,99,30,40,50), 4)
-
-    Solution.intCodeAdd(initialState, 0) shouldBe expectedState
-  }
-
-  test("perform multiplication of arg1(position), arg2(position) and store in position mode") {
-    val initialState = List(1101,9,10,70,2,3,11,0,99,30,40,50)
-    val expectedState = (List(3500,9,10,70,2,3,11,0,99,30,40,50), 8)
-
-    Solution.intCodeMultiply(initialState, 4) shouldBe expectedState
-  }
-
-  test("perform multiplication of arg1(position), arg2(immediate) and store in position mode") {
-    val initialState = List(1101,9,10,70,1002,3,11,0,99,30,40,50)
-    val expectedState = (List(770,9,10,70,1002,3,11,0,99,30,40,50), 8)
-
-    Solution.intCodeMultiply(initialState, 4) shouldBe expectedState
-  }
-
-  test("perform multiplication of arg1(immediate), arg2(position) and store in position mode") {
-    val initialState = List(1101,9,10,70,102,3,11,0,99,30,40,50)
-    val expectedState = (List(150,9,10,70,102,3,11,0,99,30,40,50), 8)
-
-    Solution.intCodeMultiply(initialState, 4) shouldBe expectedState
-  }
-
-  test("perform multiplication of arg1(immediate), arg2(immediate) and store in position mode") {
-    val initialState = List(1101,9,10,70,1102,3,11,0,99,30,40,50)
-    val expectedState = (List(33,9,10,70,1102,3,11,0,99,30,40,50), 8)
-
-    Solution.intCodeMultiply(initialState, 4) shouldBe expectedState
-  }
-
-  test("perform input with opcode 3") {
-    val initialState = List(3,0,4,0,99)
-    val valToWrite = 1
-    val expectedState = (List(1,0,4,0,99), 2)
-
-    Solution.intCodeInput(initialState, 0, valToWrite) shouldBe expectedState
-  }
-
-  test("perform output with opcode 4") {
-    val initialState = List(3,0,4,0,99)
-    val expectedState = (List(3,0,4,0,99), 4)
-
-    Solution.intCodeOutput(initialState, 2) shouldBe expectedState
-  }
-
-  test("execute the whole IntCode program") {
-    val initialExpectedStates: List[(List[Int], List[Int])] = List(
-      (List(1,1,1,4,99,5,6,0,99), List(30,1,1,4,2,5,6,0,99)),
-      (List(1,9,10,3,2,3,11,0,99,30,40,50), List(3500,9,10,70,2,3,11,0,99,30,40,50)),
-      (List(2,4,4,5,99,0), List(2,4,4,5,99,9801)),
-      (List(2,3,0,3,99), List(2,3,0,6,99)),
-      (List(1,0,0,0,99), List(2,0,0,0,99)),
-    )
-
-    initialExpectedStates.foreach {
-      case (initialState, expectedState) => Solution.executeIntCodeProgram(initialState) shouldBe expectedState
-      case _ => fail()
+    programState(instructionPointer) match {
+      case 2 => multiplicationOperation(getPositionParameter)(getPositionParameter)(programState, instructionPointer)
+      case 102 => multiplicationOperation(getImmediateParameter)(getPositionParameter)(programState, instructionPointer)
+      case 1002 => multiplicationOperation(getPositionParameter)(getImmediateParameter)(programState, instructionPointer)
+      case 1102 => multiplicationOperation(getImmediateParameter)(getImmediateParameter)(programState, instructionPointer)
+      case _ => (List(), instructionPointer)
     }
   }
 
-  test("solve part 1: IntCode program should output 11193703 after execution") {
-    // Update values come from the assignment.
-    val initialState = Parser.parseCommaSeparatedIntList("solution5/input.txt")
-
-    // Last print is 11193703.
-    Solution.executeIntCodeProgram(initialState, 1).head shouldBe 3
+  def getImmediateParameter(programState: List[Int], index: Int): Int = {
+    programState(index)
   }
 
-  test("perform jump if true with different parameter modes") {
-    val table: List[(List[Int], (List[Int], Int))] = List(
-      (List(105,9,5,99,-1,4), (List(105,9,5,99,-1,4), 4)),
-      (List(105,-1,5,99,-1,4), (List(105,-1,5,99,-1,4), 4)),
-      (List(105,0,5,99,-1,4), (List(105,0,5,99,-1,4), 3)),
+  def getPositionParameter(programState: List[Int], index: Int): Int = {
+    programState(programState(index))
+  }
 
-      (List(5,4,5,99,9,4), (List(5,4,5,99,9,4), 4)),
-      (List(5,4,5,99,-1,4), (List(5,4,5,99,-1,4), 4)),
-      (List(5,4,5,99,0,4), (List(5,4,5,99,0,4), 3)),
+  def intCodeAdd(programState: List[Int], instructionPointer: Int): (List[Int], Int) = {
+    def addition(a: Int, b: Int): Int = a + b
+    val additionOperation = (intCodeArithmeticOperation _)(addition)
 
-      (List(1005,4,5,99,9,4), (List(1005,4,5,99,9,4), 5)),
-      (List(1005,4,5,99,-1,4), (List(1005,4,5,99,-1,4), 5)),
-      (List(1005,4,5,99,0,4), (List(1005,4,5,99,0,4), 3)),
-
-      (List(1105,9,5,99,-1,4), (List(1105,9,5,99,-1,4), 5)),
-      (List(1105,-1,5,99,-1,4), (List(1105,-1,5,99,-1,4), 5)),
-      (List(1105,0,5,99,-1,4), (List(1105,0,5,99,-1,4), 3)),
-    )
-
-    table.foreach {
-      case (programState, expected) => Solution.intCodeJumpIfTrue(programState, 0) shouldBe expected
-      case _ => fail()
+    programState(instructionPointer) match {
+      case 1 => additionOperation(getPositionParameter)(getPositionParameter)(programState, instructionPointer)
+      case 101 => additionOperation(getImmediateParameter)(getPositionParameter)(programState, instructionPointer)
+      case 1001 => additionOperation(getPositionParameter)(getImmediateParameter)(programState, instructionPointer)
+      case 1101 => additionOperation(getImmediateParameter)(getImmediateParameter)(programState, instructionPointer)
+      case _ => (List(), instructionPointer)
     }
   }
 
-  test("perform jump if false with different parameter modes") {
-    val table: List[(List[Int], (List[Int], Int))] = List(
-      (List(106,9,5,99,-1,4), (List(106,9,5,99,-1,4), 3)),
-      (List(106,-1,5,99,-1,4), (List(106,-1,5,99,-1,4), 3)),
-      (List(106,0,5,99,-1,4), (List(106,0,5,99,-1,4), 4)),
+  def intCodeInput(programState: List[Int], instructionPointer: Int, valToWrite: Int): (List[Int], Int) = {
+    (programState.updated(programState(instructionPointer+1), valToWrite), instructionPointer+2)
+  }
 
-      (List(6,4,5,99,9,4), (List(6,4,5,99,9,4), 3)),
-      (List(6,4,5,99,-1,4), (List(6,4,5,99,-1,4), 3)),
-      (List(6,4,5,99,0,4), (List(6,4,5,99,0,4), 4)),
+  def intCodeOutput(programState: List[Int], instructionPointer: Int): (List[Int], Int) = {
+    // TODO: use cats effect IO
+    programState(instructionPointer) match {
+      case 4 => println(getPositionParameter(programState, instructionPointer+1))
+      case 104 => println(getImmediateParameter(programState, instructionPointer+1))
+    }
+    (programState, instructionPointer+2)
+  }
 
-      (List(1006,4,5,99,9,4), (List(1006,4,5,99,9,4), 3)),
-      (List(1006,4,5,99,-1,4), (List(1006,4,5,99,-1,4), 3)),
-      (List(1006,4,5,99,0,4), (List(1006,4,5,99,0,4), 5)),
+  def intCodeBranchOperation(operation: Int => Boolean)(getArg1: (List[Int], Int) => Int)(getArg2: (List[Int], Int) => Int)(programState: List[Int], instructionPointer: Int): (List[Int], Int) = {
+    val firstOperand = getArg1(programState, instructionPointer+1)
 
-      (List(1106,9,5,99,-1,4), (List(1106,9,5,99,-1,4), 3)),
-      (List(1106,-1,5,99,-1,4), (List(1106,-1,5,99,-1,4), 3)),
-      (List(1106,0,5,99,-1,4), (List(1106,0,5,99,-1,4), 5)),
-    )
-
-    table.foreach {
-      case (programState, expected) => Solution.intCodeJumpIfFalse(programState, 0) shouldBe expected
-      case _ => fail()
+    if (operation(firstOperand)) {
+      (programState, getArg2(programState, instructionPointer+2))
+    } else {
+      (programState, instructionPointer+3)
     }
   }
 
-  test("perform less than with different parameter modes") {
-    val table: List[(List[Int], (List[Int], Int))] = List(
-      (List(107,9,5,6,99,-1,4), (List(107,9,5,6,99,-1,0), 4)),
-      (List(107,-1,5,6,99,-1,4), (List(107,-1,5,6,99,-1,0), 4)),
-      (List(107,-3,5,6,99,-1,4), (List(107,-3,5,6,99,-1,1), 4)),
+  def intCodeJumpIfTrue(programState: List[Int], instructionPointer: Int): (List[Int], Int) = {
+    def isNotZero(a: Int): Boolean = (a != 0)
+    val jumpIfNotZero = (intCodeBranchOperation _)(isNotZero)
 
-      (List(7,4,5,6,11,9,4), (List(7,4,5,6,11,9,0), 4)),
-      (List(7,4,5,6,-10,-1,4), (List(7,4,5,6,-10,-1,1), 4)),
-      (List(7,4,5,6,-1,0,4), (List(7,4,5,6,-1,0,1), 4)),
-
-      (List(1007,4,5,6,11,9,4), (List(1007,4,5,6,11,9,0), 4)),
-      (List(1007,4,5,6,-10,-1,4), (List(1007,4,5,6,-10,-1,1), 4)),
-      (List(1007,4,5,6,-1,0,4), (List(1007,4,5,6,-1,0,1), 4)),
-
-      (List(1107,9,5,6,99,-1,4), (List(1107,9,5,6,99,-1,0), 4)),
-      (List(1107,-1,5,6,99,-1,4), (List(1107,-1,5,6,99,-1,1), 4)),
-      (List(1107,0,5,6,99,-1,4), (List(1107,0,5,6,99,-1,1), 4)),
-    )
-
-    table.foreach {
-      case (programState, expected) => Solution.intCodeLessThan(programState, 0) shouldBe expected
-      case _ => fail()
+    programState(instructionPointer) match {
+      case 5 => jumpIfNotZero(getPositionParameter)(getPositionParameter)(programState, instructionPointer)
+      case 105 => jumpIfNotZero(getImmediateParameter)(getPositionParameter)(programState, instructionPointer)
+      case 1005 => jumpIfNotZero(getPositionParameter)(getImmediateParameter)(programState, instructionPointer)
+      case 1105 => jumpIfNotZero(getImmediateParameter)(getImmediateParameter)(programState, instructionPointer)
+      case _ => (List(), instructionPointer)
     }
   }
 
-  test("perform equals with different parameter modes") {
-    val table: List[(List[Int], (List[Int], Int))] = List(
-      (List(108,9,5,6,99,-1,4), (List(108,9,5,6,99,-1,0), 4)),
-      (List(108,-1,5,6,99,-1,4), (List(108,-1,5,6,99,-1,1), 4)),
-      (List(108,-3,5,6,99,-1,4), (List(108,-3,5,6,99,-1,0), 4)),
+  def intCodeJumpIfFalse(programState: List[Int], instructionPointer: Int): (List[Int], Int) = {
+    def isZero(a: Int): Boolean = (a == 0)
+    val jumpIfIsZero = (intCodeBranchOperation _)(isZero)
 
-      (List(8,4,5,6,11,9,4), (List(8,4,5,6,11,9,0), 4)),
-      (List(8,4,5,6,-10,-1,4), (List(8,4,5,6,-10,-1,0), 4)),
-      (List(8,4,5,6,0,0,4), (List(8,4,5,6,0,0,1), 4)),
-
-      (List(1008,4,5,6,11,9,4), (List(1008,4,5,6,11,9,0), 4)),
-      (List(1008,4,5,6,5,-1,4), (List(1008,4,5,6,5,-1,1), 4)),
-      (List(1008,4,5,6,0,0,4), (List(1008,4,5,6,0,0,0), 4)),
-
-      (List(1108,9,9,6,99,-1,4), (List(1108,9,9,6,99,-1,1), 4)),
-      (List(1108,-1,5,6,99,-1,4), (List(1108,-1,5,6,99,-1,0), 4)),
-      (List(1108,0,5,6,99,-1,4), (List(1108,0,5,6,99,-1,0), 4)),
-    )
-
-    table.foreach {
-      case (programState, expected) => Solution.intCodeEquals(programState, 0) shouldBe expected
-      case _ => fail()
+    programState(instructionPointer) match {
+      case 6 => jumpIfIsZero(getPositionParameter)(getPositionParameter)(programState, instructionPointer)
+      case 106 => jumpIfIsZero(getImmediateParameter)(getPositionParameter)(programState, instructionPointer)
+      case 1006 => jumpIfIsZero(getPositionParameter)(getImmediateParameter)(programState, instructionPointer)
+      case 1106 => jumpIfIsZero(getImmediateParameter)(getImmediateParameter)(programState, instructionPointer)
+      case _ => (List(), instructionPointer)
     }
   }
 
-  test("solve part 2: IntCode program should output 12410607 after execution") {
-    // Update values come from the assignment.
-    val initialState = Parser.parseCommaSeparatedIntList("solution5/input.txt")
+  def intCodeLessThan(programState: List[Int], instructionPointer: Int): (List[Int], Int) = {
+    def lessThan(a: Int, b:Int): Int = (if (a < b) 1 else 0)
+    val isLessThan = (intCodeArithmeticOperation _)(lessThan)
 
-    // Last print is 12410607.
-    Solution.executeIntCodeProgram(initialState, 5).head shouldBe 314
+    programState(instructionPointer) match {
+      case 7 => isLessThan(getPositionParameter)(getPositionParameter)(programState, instructionPointer)
+      case 107 => isLessThan(getImmediateParameter)(getPositionParameter)(programState, instructionPointer)
+      case 1007 => isLessThan(getPositionParameter)(getImmediateParameter)(programState, instructionPointer)
+      case 1107 => isLessThan(getImmediateParameter)(getImmediateParameter)(programState, instructionPointer)
+      case _ => (List(), instructionPointer)
+    }
   }
+
+  def intCodeEquals(programState: List[Int], instructionPointer: Int): (List[Int], Int) = {
+    def equals(a: Int, b:Int): Int = (if (a == b) 1 else 0)
+    val isEquals = (intCodeArithmeticOperation _)(equals)
+
+    programState(instructionPointer) match {
+      case 8 => isEquals(getPositionParameter)(getPositionParameter)(programState, instructionPointer)
+      case 108 => isEquals(getImmediateParameter)(getPositionParameter)(programState, instructionPointer)
+      case 1008 => isEquals(getPositionParameter)(getImmediateParameter)(programState, instructionPointer)
+      case 1108 => isEquals(getImmediateParameter)(getImmediateParameter)(programState, instructionPointer)
+      case _ => (List(), instructionPointer)
+    }
+  }
+
+  // TODO
+  //  programState(instructionPointer) match {
+  //    case validInstruction => applyParameterModes(programState(instructionPointer))(programState, instructionPointer)
+  //    case _ => (List(), instructionPointer)
+  //  }
+  //
+  //  def applyParameterModes(programInstruction: Int,
+  //                          partialFn: (List[Int], Int) => Int, (List[Int], Int) => Int]
+  //                         ): PartialFunction[(List[Int], Int) => (List[Int], Int)]
+  //    partialFn: (PartialFunction[(List[Int], Int) => Int, List[Int], Int => Int, List[Int], Int => (List[Int], Int)]) = {
+  //    programInstruction.toString match {
+  //      case s"100${_}" => partialFn(getPositionParameter)(getImmediateParameter)
+  //      case s"110${_}" => partialFn(getImmediateParameter)(getImmediateParameter)
+  //      case s"10${_}" => partialFn(getImmediateParameter)(getPositionParameter)
+  //      case "1" | "2" | "3" |
+  //      "4" | "5" | "6" | "7" |
+  //      "8" => partialFn(getPositionParameter)(getPositionParameter)
+  //    }
+  //  }
 }
