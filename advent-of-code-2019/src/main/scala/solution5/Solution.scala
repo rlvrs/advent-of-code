@@ -150,22 +150,22 @@ object Solution {
   }
 
   // TODO
-//  programState(instructionPointer) match {
-//    case validInstruction => applyParameterModes(programState(instructionPointer))(programState, instructionPointer)
-//    case _ => (List(), instructionPointer)
-//  }
-//
-//  def applyParameterModes(programInstruction: Int,
-//                          partialFn: (List[Int], Int) => Int, (List[Int], Int) => Int]
-//                         ): PartialFunction[(List[Int], Int) => (List[Int], Int)]
-//    partialFn: (PartialFunction[(List[Int], Int) => Int, List[Int], Int => Int, List[Int], Int => (List[Int], Int)]) = {
-//    programInstruction.toString match {
-//      case s"100${_}" => partialFn(getPositionParameter)(getImmediateParameter)
-//      case s"110${_}" => partialFn(getImmediateParameter)(getImmediateParameter)
-//      case s"10${_}" => partialFn(getImmediateParameter)(getPositionParameter)
-//      case "1" | "2" | "3" |
-//      "4" | "5" | "6" | "7" |
-//      "8" => partialFn(getPositionParameter)(getPositionParameter)
-//    }
-//  }
+  //  programState(instructionPointer) match {
+  //    case validInstruction => applyParameterModes(programState(instructionPointer))(programState, instructionPointer)
+  //    case _ => (List(), instructionPointer)
+  //  }
+  //
+  //  def applyParameterModes(programInstruction: Int,
+  //                          partialFn: (List[Int], Int) => Int, (List[Int], Int) => Int]
+  //                         ): PartialFunction[(List[Int], Int) => (List[Int], Int)]
+  //    partialFn: (PartialFunction[(List[Int], Int) => Int, List[Int], Int => Int, List[Int], Int => (List[Int], Int)]) = {
+  //    programInstruction.toString match {
+  //      case s"100${_}" => partialFn(getPositionParameter)(getImmediateParameter)
+  //      case s"110${_}" => partialFn(getImmediateParameter)(getImmediateParameter)
+  //      case s"10${_}" => partialFn(getImmediateParameter)(getPositionParameter)
+  //      case "1" | "2" | "3" |
+  //      "4" | "5" | "6" | "7" |
+  //      "8" => partialFn(getPositionParameter)(getPositionParameter)
+  //    }
+  //  }
 }
